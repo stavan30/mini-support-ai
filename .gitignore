@@ -1,0 +1,28 @@
+# Byte-compiled / cache
+__pycache__/
+*.py[cod]
+
+# Virtual environment
+.env
+venv/
+env/
+
+# Jupyter notebooks temp files
+.ipynb_checkpoints/
+
+# VSCode settings (optional)
+.vscode/
+
+# Dataset files
+*.csv
+data/
+
+# System files
+.DS_Store
+
+# FAISS index or model outputs (you’ll create these later)
+*.bin
+*.pkl
+embeddings/
+
+.history/
