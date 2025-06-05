@@ -1,396 +1,119 @@
-# mini-support-ai
+# 🔍 Mini Support AI – Semantic Search for Technical Issues
 
-## Step 3: K-means and TF-IDF results
+This project builds a **semantic search engine** over support issues/questions, similar to Jira tickets or Stack Overflow posts. It walks through data preprocessing, clustering, semantic embeddings, and a Streamlit-based UI for search.
 
-### With num_clusters=5
---- Sample Questions per Cluster ---
+---
 
-Cluster 0:
-  - why ternary operator in swift is so picky?
-  - why does the reverse() function in the swift standard library return reverserandomaccesscollection?
-  - can i throw from class init() in swift with constant string loaded from file?
+## ✅ Goal
 
-Cluster 1:
-  - text overlay image with darkened opacity react native
-  - how to delete compiled js files from previous typescript(.ts) files?
-  - es6 - import all named module without alias
+Help users find relevant past issues **based on meaning**, not just keywords — useful for support teams managing tools like Docker, Git, Artifactory, Bitbucket, etc.
 
-Cluster 2:
-  - why are java optionals immutable?
-  - hide/show fab with scale animation
-  - changing theme in windows 10 uwp app programmatically
+---
 
-Cluster 3:
-  - how to play gif in android from url?
-  - in android studio 2.0, cannot find local variable of method in debug mode
-  - cannot resolve symbol 'requestqueue'
+## 🗂️ Dataset Used
 
-Cluster 4:
-  - disable logging for one container in docker-compose
-  - persist elastic search data in docker container
-  - redirecting command output in docker
+We used a high-quality subset of 60K Stack Overflow questions:
+- Source: [Kaggle - 60k Stack Overflow Questions](https://www.kaggle.com/datasets/imoore/60k-stack-overflow-questions-with-quality-rate)
+- Filtered only `HQ` (High-Quality) entries for cleaner training
 
---- Top Terms per Cluster ---
+---
 
-Cluster 0 top terms:
-  string
-  class
-  type
-  public
-  return
-  function
-  int
-  new
-  value
-  var
+## 🧱 Project Structure
 
-Cluster 1 top terms:
-  react
-  component
-  js
-  div
-  import
-  app
-  angular
-  native
-  webpack
-  props
+mini-support-ai/
+├── main.py # Step 1–3: Load, clean, cluster
+├── main_step4.py # Step 4: Embedding via Sentence-BERT
+├── main_step5.py # Step 5: Search via FAISS
+├── app.py # Step 6: Streamlit UI
+├── data/ # Datasets and embeddings
+├── src/ # Modular Python files
+└── requirements.txt
 
-Cluster 2 top terms:
-  file
-  using
-  error
-  use
-  like
-  code
-  app
-  way
-  want
-  does
+---
 
-Cluster 3 top terms:
-  android
-  com
-  studio
-  java
-  app
-  gradle
-  support
-  build
-  project
-  id
+## 🔢 Step-by-Step Pipeline
 
-Cluster 4 top terms:
-  docker
-  compose
-  container
-  image
-  run
-  dockerfile
-  build
-  containers
-  yml
-  running
+### ✅ Step 1: Load and Filter High-Quality Questions
 
+- File: `main.py` → `load_high_quality_questions()`
+- Loads `train.csv` and filters only rows with label `"HQ"`
+- Result: ~15,000 well-written technical questions
 
-  ### With num_clusters=6
-  --- Sample Questions per Cluster ---
+**Why?**
+To simulate well-documented Jira tickets — clean and useful data only.
 
-Cluster 0:
-  - why ternary operator in swift is so picky?
-  - why does the reverse() function in the swift standard library return reverserandomaccesscollection?
-  - can i throw from class init() in swift with constant string loaded from file?
+---
 
-Cluster 1:
-  - text overlay image with darkened opacity react native
-  - how to delete compiled js files from previous typescript(.ts) files?
-  - es6 - import all named module without alias
+### ✅ Step 2: Clean the Text
 
-Cluster 2:
-  - hide/show fab with scale animation
-  - changing theme in windows 10 uwp app programmatically
-  - mongodb failing to start - ***aborting after fassert() failure
+- File: `main.py` → `clean_dataset()`
+- Uses BeautifulSoup and regex to remove:
+  - HTML tags from the `Body`
+  - Converts `Tags` like `<python><docker>` → `["python", "docker"]`
 
-Cluster 3:
-  - why are java optionals immutable?
-  - java mongodb driver how do you catch exceptions?
-  - visualvm fails with "no jdkhome found" on ubuntu 15.10 with oracle jdk
+**Why?**
+Clean text improves both clustering and semantic embeddings later.
 
-Cluster 4:
-  - disable logging for one container in docker-compose
-  - persist elastic search data in docker container
-  - redirecting command output in docker
+---
 
-Cluster 5:
-  - how to play gif in android from url?
-  - in android studio 2.0, cannot find local variable of method in debug mode
-  - cannot resolve symbol 'requestqueue'
+### ✅ Step 3: Categorize Using KMeans Clustering (`k=7`)
 
---- Top Terms per Cluster ---
+- File: `main.py` → `cluster_questions()`
+- Combined `Title` + `Body` → TF-IDF → KMeans
+- `k=7` gave optimal separation after testing `k=5` and `k=6`
 
-Cluster 0 top terms:
-  string
-  class
-  type
-  public
-  return
-  function
-  int
-  new
-  value
-  var
+**Why?**
+Grouping questions into meaningful topics helps users browse and filter.
 
-Cluster 1 top terms:
-  react
-  component
-  js
-  div
-  import
-  app
-  angular
-  native
-  props
-  webpack
+**Cluster Breakdown (Example):**
 
-Cluster 2 top terms:
-  file
-  using
-  use
-  error
-  like
-  app
-  code
-  way
-  want
-  does
+| Cluster | Topic                        | Top Terms                             |
+|---------|------------------------------|----------------------------------------|
+| 0       | Swift / Language Concepts    | string, class, function, return        |
+| 1       | React / Frontend             | react, component, js, webpack          |
+| 3       | Java + Data Tools            | java, pandas, dataframe, spark         |
+| 5       | Android Development          | android, gradle, build, studio         |
+| 6       | Docker / Containerization    | docker, compose, container, run        |
 
-Cluster 3 top terms:
-  java
-  df
-  dataframe
-  pandas
-  column
-  date
-  org
-  np
-  data
-  00
+---
 
-Cluster 4 top terms:
-  docker
-  compose
-  container
-  image
-  run
-  dockerfile
-  build
-  containers
-  yml
-  running
+### ✅ Step 4: Generate Embeddings using Sentence-BERT
 
-Cluster 5 top terms:
-  android
-  com
-  studio
-  app
-  java
-  gradle
-  support
-  build
-  project
-  id
+- File: `main_step4.py`
+- Used `all-MiniLM-L6-v2` model from `sentence-transformers`
+- Output: 384-dimension embeddings stored in `embeddings.npy`
 
+**Why?**
+Embeddings capture the *meaning* of each question → enables semantic search.
 
-  ### With num_clusters=7
-  Cluster 0:
-  - why ternary operator in swift is so picky?
-  - why does the reverse() function in the swift standard library return reverserandomaccesscollection?
-  - can i throw from class init() in swift with constant string loaded from file?
+---
 
-Cluster 1:
-  - text overlay image with darkened opacity react native
-  - how to delete compiled js files from previous typescript(.ts) files?
-  - es6 - import all named module without alias
+### ✅ Step 5: Semantic Search with FAISS
 
-Cluster 2:
-  - hide/show fab with scale animation
-  - changing theme in windows 10 uwp app programmatically
-  - mongodb failing to start - ***aborting after fassert() failure
+- File: `main_step5.py`
+- Loads embeddings into FAISS index
+- Accepts user query → encodes it → returns closest matching issues
 
-Cluster 3:
-  - why are java optionals immutable?
-  - java mongodb driver how do you catch exceptions?
-  - visualvm fails with "no jdkhome found" on ubuntu 15.10 with oracle jdk
-
-Cluster 4:
-  - django: attributeerror: 'nonetype' object has no attribute 'split'
-  - nodejs express encodes the url - how to decode
-  - are there any alternatives to t4 templates and envdte for cross platform asp.net 5 development?
-
-Cluster 5:
-  - how to play gif in android from url?
-  - in android studio 2.0, cannot find local variable of method in debug mode
-  - cannot resolve symbol 'requestqueue'
-
-Cluster 6:
-  - disable logging for one container in docker-compose
-  - persist elastic search data in docker container
-  - redirecting command output in docker
-
---- Top Terms per Cluster ---
-
-Cluster 0 top terms:
-  string
-  class
-  int
-  type
-  public
-  return
-  std
-  foo
-  new
-  void
-
-Cluster 1 top terms:
-  react
-  component
-  js
-  div
-  import
-  app
-  native
-  angular
-  props
-  webpack
-
-Cluster 2 top terms:
-  file
-  using
-  use
-  like
-  error
-  code
-  way
-  want
-  python
-  does
-
-Cluster 3 top terms:
-  java
-  df
-  dataframe
-  pandas
-  org
-  column
-  spark
-  pd
-  columns
-  apache
-
-Cluster 4 top terms:
-  request
-  net
-  api
-  user
-  http
-  app
-  response
-  core
-  server
-  error
-
-Cluster 5 top terms:
-  android
-  com
-  studio
-  app
-  gradle
-  java
-  support
-  build
-  project
-  id
-
-Cluster 6 top terms:
-  docker
-  compose
-  container
-  image
-  run
-  dockerfile
-  build
-  containers
-  yml
-  running
-
-
-  ## STEP - 4
-🧠 Why Step 4: Embedding + Semantic Search?
-🎯 Problem with Current Setup (KMeans + TF-IDF):
-TF-IDF is keyword-based: it can’t understand meaning or similarity if the words don’t match exactly.
+**Why?**
+Allows matching questions even when words differ, but meanings are similar.
 
 Example:
+Query: "docker build fails"
+Matches:
 
-User searches: “git push fails after rebase”
+1-add failed: no such file/directory
 
-Your TF-IDF model may not match: “unable to push branch due to upstream mismatch”
+2-docker issue: /bin/sh: pip: not found
 
-❌ TF-IDF doesn’t "know" those are related.
-✅ That’s where semantic search comes in.
+3-error pulling image: unexpected EOF
 
-💡 What is Semantic Search?
-Semantic search finds results based on meaning, not just word match.
+---
 
-Example:
-Query: "can't pull docker image from private registry"
+## ▶️ Run the App
 
-Match: "Artifactory Docker authentication fails with 403"
+```bash
+streamlit run app.py
 
-Even though the words are different, they’re semantically similar.
+# Install with:
 
-🔍 What Are Embeddings?
-An embedding is a vector (list of numbers) that represents the meaning of a sentence.
-
-For example:
-
-"docker pull fails" → [0.12, -0.03, ..., 0.98] (384-dimensional vector)
-
-"can't download image from registry" → a very similar vector
-
-So now you can compare meaning using math (cosine distance, L2, etc.)
-
-🧠 What is BERT (and Sentence-BERT)?
-BERT = Bidirectional Encoder Representations from Transformers
-
-It’s a powerful language model that understands sentence meaning
-
-Sentence-BERT (S-BERT) = A tuned version that outputs embeddings for entire sentences, not just words
-
-We’ll use this model:
-
-python
-Copy
-Edit
-sentence-transformers/all-MiniLM-L6-v2
-✅ Lightweight
-✅ Fast
-✅ Good accuracy
-
-📦 What is FAISS?
-FAISS = Facebook AI Similarity Search
-It’s a vector database that:
-
-Stores your embeddings (all 15k questions)
-
-Quickly finds most similar entries to a user’s query
-
-Instead of searching by keyword, you search by meaning.
-
-🔁 Summary: What Step 4 Will Do
-Step	Action
-✅ 1	Embed each question (title + body) using Sentence-BERT
-✅ 2	Store all those vectors in FAISS index
-✅ 3	Accept user queries, embed them too
-✅ 4	Use FAISS to return the most similar questions from the dataset
-✅ 5	Show result with original title + answer + cluster label (from Step 3)
-
+pip install -r requirements.txt
