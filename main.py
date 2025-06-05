@@ -35,3 +35,7 @@ if __name__ == "__main__":
         print(f"\nCluster {i} top terms:")
         for ind in order_centroids[i, :10]:
             print(f"  {terms[ind]}")
+
+    # Save clustered data to use in Step 4
+    clustered_df.to_csv("data/clustered_df.csv", index=False)
+
