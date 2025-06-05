@@ -322,3 +322,75 @@ Cluster 6 top terms:
   containers
   yml
   running
+
+
+  ## STEP - 4
+🧠 Why Step 4: Embedding + Semantic Search?
+🎯 Problem with Current Setup (KMeans + TF-IDF):
+TF-IDF is keyword-based: it can’t understand meaning or similarity if the words don’t match exactly.
+
+Example:
+
+User searches: “git push fails after rebase”
+
+Your TF-IDF model may not match: “unable to push branch due to upstream mismatch”
+
+❌ TF-IDF doesn’t "know" those are related.
+✅ That’s where semantic search comes in.
+
+💡 What is Semantic Search?
+Semantic search finds results based on meaning, not just word match.
+
+Example:
+Query: "can't pull docker image from private registry"
+
+Match: "Artifactory Docker authentication fails with 403"
+
+Even though the words are different, they’re semantically similar.
+
+🔍 What Are Embeddings?
+An embedding is a vector (list of numbers) that represents the meaning of a sentence.
+
+For example:
+
+"docker pull fails" → [0.12, -0.03, ..., 0.98] (384-dimensional vector)
+
+"can't download image from registry" → a very similar vector
+
+So now you can compare meaning using math (cosine distance, L2, etc.)
+
+🧠 What is BERT (and Sentence-BERT)?
+BERT = Bidirectional Encoder Representations from Transformers
+
+It’s a powerful language model that understands sentence meaning
+
+Sentence-BERT (S-BERT) = A tuned version that outputs embeddings for entire sentences, not just words
+
+We’ll use this model:
+
+python
+Copy
+Edit
+sentence-transformers/all-MiniLM-L6-v2
+✅ Lightweight
+✅ Fast
+✅ Good accuracy
+
+📦 What is FAISS?
+FAISS = Facebook AI Similarity Search
+It’s a vector database that:
+
+Stores your embeddings (all 15k questions)
+
+Quickly finds most similar entries to a user’s query
+
+Instead of searching by keyword, you search by meaning.
+
+🔁 Summary: What Step 4 Will Do
+Step	Action
+✅ 1	Embed each question (title + body) using Sentence-BERT
+✅ 2	Store all those vectors in FAISS index
+✅ 3	Accept user queries, embed them too
+✅ 4	Use FAISS to return the most similar questions from the dataset
+✅ 5	Show result with original title + answer + cluster label (from Step 3)
+
